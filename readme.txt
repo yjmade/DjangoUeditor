@@ -1,4 +1,13 @@
-﻿本模块帮助在Django应用中集成百度Ueditor HTML编辑器，Ueditor HTML编辑器是百度开源的HTML编辑器，
+﻿
+
+本fork在原始版本的基础上,
+--更改了view中所有文件存取的逻辑,增加了两个model:FileStore,ImageStore,使用标准FileField和ImageField存储文件,并存储文件地址,md5,上传用户等信息,同md5文件不会再次保存
+--限定登录才能上传文件.
+--图片库中只可以看到自己上传的图片.
+--修正attachment.html中fileScan.png误写filescan.png问题
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+本模块帮助在Django应用中集成百度Ueditor HTML编辑器，Ueditor HTML编辑器是百度开源的HTML编辑器，
 
 *2013-2-22*
 --更新到Ueditor 1.2.5
@@ -10,35 +19,35 @@
 
 #1、安装方法
 ============================
-	
-	**方法一：下载安装包，在命令行运行：
-		python setup.py install
-	**方法二：使用pip工具在命令行运行(推荐)：
-   		pip install DjangoUeditor
+
+  **方法一：下载安装包，在命令行运行：
+    python setup.py install
+  **方法二：使用pip工具在命令行运行(推荐)：
+      pip install DjangoUeditor
 
 2、在INSTALL_APPS里面增加DjangoUeditor app，如下：
 ============================
-     
-		INSTALLED_APPS = (
-			#........
-    		'DjangoUeditor',
-		)
+
+    INSTALLED_APPS = (
+      #........
+        'DjangoUeditor',
+    )
 
 
 3、在urls.py中增加：
 ============================
-	url(r'^ueditor/',include('DjangoUeditor.urls' )),
+  url(r'^ueditor/',include('DjangoUeditor.urls' )),
 
 4、在models中这样定义：
 ============================
-	from DjangoUeditor.models import UEditorField
-	class Blog(models.Model):
-    	Name=models.CharField(,max_length=100,blank=True)
-    	Content=UEditorField(u'内容	',height=100,width=500,default='test',imagePath="uploadimg/",imageManagerPath="imglib",toolbars='mini',options={"elementPathEnabled":True},filePath='upload',blank=True)
+  from DjangoUeditor.models import UEditorField
+  class Blog(models.Model):
+      Name=models.CharField(,max_length=100,blank=True)
+      Content=UEditorField(u'内容  ',height=100,width=500,default='test',imagePath="uploadimg/",imageManagerPath="imglib",toolbars='mini',options={"elementPathEnabled":True},filePath='upload',blank=True)
 
-	说明：
-	UEditorField继承自models.TextField,因此你可以直接将model里面定义的models.TextField直接改成UEditorField即可。
-	UEditorField提供了额外的参数：
+  说明：
+  UEditorField继承自models.TextField,因此你可以直接将model里面定义的models.TextField直接改成UEditorField即可。
+  UEditorField提供了额外的参数：
         toolbars:配置你想显示的工具栏，取值为mini,normal,full，代表小，一般，全部。如果默认的工具栏不符合您的要求，您可以在settings里面配置自己的显示按钮。参见后面介绍。
         imagePath:图片上传的路径,如"images/",实现上传到"{{MEDIA_ROOT}}/images"文件夹
         filePath:附件上传的路径,如"files/",实现上传到"{{MEDIA_ROOT}}/files"文件夹
@@ -49,29 +58,29 @@
         width，height:编辑器的宽度和高度，以像素为单位。
 
 5、在表单中使用非常简单，与常规的form字段没什么差别，如下：
-============================	
-	class TestUeditorModelForm(forms.ModelForm):
-    	class Meta:
-        	model=Blog
-	***********************************
-	如果不是用ModelForm，可以有两种方法使用：
+============================
+  class TestUeditorModelForm(forms.ModelForm):
+      class Meta:
+          model=Blog
+  ***********************************
+  如果不是用ModelForm，可以有两种方法使用：
 
-	1: 使用forms.UEditorField
+  1: 使用forms.UEditorField
 
-	from  DjangoUeditor.forms import UEditorField
-	class TestUEditorForm(forms.Form):
-	    Description=UEditorField("描述",initial="abc",width=600,height=800)
-	
-	2: widgets.UEditorWidget
+  from  DjangoUeditor.forms import UEditorField
+  class TestUEditorForm(forms.Form):
+      Description=UEditorField("描述",initial="abc",width=600,height=800)
 
-	from  DjangoUeditor.widgets import UEditorWidget
-	class TestUEditorForm(forms.Form):
-		Content=forms.CharField(label="内容",widget=UEditorWidget(width=800,height=500, imagePath='aa', filePath='bb',toolbars={}))
-	
-	widgets.UEditorWidget和forms.UEditorField的输入参数与上述models.UEditorField一样。
+  2: widgets.UEditorWidget
+
+  from  DjangoUeditor.widgets import UEditorWidget
+  class TestUEditorForm(forms.Form):
+    Content=forms.CharField(label="内容",widget=UEditorWidget(width=800,height=500, imagePath='aa', filePath='bb',toolbars={}))
+
+  widgets.UEditorWidget和forms.UEditorField的输入参数与上述models.UEditorField一样。
 
 6、Settings配置
-============================     
+============================
       在Django的Settings可以配置以下参数：
             UEDITOR_SETTINGS={
                 "toolbars":{           #定义多个工具栏显示的按钮，允行定义多个
@@ -155,4 +164,4 @@
     **目前暂时不支持ueditor的插件
     **别忘记了运行collectstatic命令，该命令可以将ueditor的所有文件复制到{{STATIC_ROOT}}文件夹里面
     **Django默认开启了CSRF中间件，因此如果你的表单没有加入{% csrf_token %}，那么当您上传文件和图片时会失败
-   
+
