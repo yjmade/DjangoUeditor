@@ -4,6 +4,22 @@ from django.db import models
 from django.contrib.admin import widgets as admin_widgets
 from widgets import UEditorWidget,AdminUEditorWidget
 from utils import MadeUeditorOptions,GenerateRndFilename
+from django.conf import settings
+
+if hasattr(settings, "UEDITOR_OWNER_MODEL"):
+    UEDITOR_OWNER_MODEL=settings.UEDITOR_OWNER_MODEL
+else:
+    UEDITOR_OWNER_MODEL="auth.User"
+
+if hasattr(settings, "UEDITOR_GET_OWNER"):
+    UEDITOR_GET_OWNER=settings.UEDITOR_GET_OWNER
+else:
+    UEDITOR_GET_OWNER=lambda request:request.user
+
+if hasattr(settings, "UEDITOR_OWNER_CHECK"):
+    UEDITOR_OWNER_CHECK=settings.UEDITOR_OWNER_CHECK
+else:
+    UEDITOR_OWNER_CHECK=lambda user:user.is_authenticated()
 
 
 class UEditorField(models.TextField):
@@ -43,7 +59,10 @@ from django.core.files.base import ContentFile
 
 
 def get_image_format(file):
-    image_pil=PIL.Image.open(file)
+    try:
+        image_pil=PIL.Image.open(file)
+    except Exception:
+        return None
     image_format=image_pil.format.lower()
     image_format="jpg" if image_format=="jpeg" else image_format
     return image_format
@@ -62,6 +81,8 @@ def get_content_file_by_url(url,referer=None,is_image=False):
         file_name=os.path.basename(url)
         if is_image:
             image_format=get_image_format(result)
+            if not image_format:
+                raise ValueError()
             # image_name=os.path.basename(url).split(".")
             file_name ="image.%s"%image_format
 
@@ -70,10 +91,18 @@ def get_content_file_by_url(url,referer=None,is_image=False):
         return (None,None,None)
 
 
-def get_content_file_by_file(file):
+def get_content_file_by_file(file,file_name="image.jpg",is_image=False):
     result = cStringIO.StringIO(file.read()) if hasattr(file, "read") else cStringIO.StringIO(file)
+    if is_image:
+        image_format=get_image_format(result)
+        if not image_format:
+            return None,None,None
+        dirname=os.path.dirname(file_name)
+        basename=os.path.basename(file_name)
+        basename="%s.%s"%(".".join(basename.split(".")[:-1]),image_format)
+        file_name=os.path.join(dirname,basename)
     file_md5=md5(result.getvalue()).hexdigest()
-    return ContentFile(result.getvalue()),file_md5
+    return ContentFile(result.getvalue()),file_md5,file_name
 
 
 def get_image_path(instance,file_name):
@@ -89,7 +118,7 @@ class BaseFileStore(models.Model):
     source_link=models.URLField(verbose_name=u"源地址",db_index=True,max_length=1024)
     md5=models.CharField(verbose_name=u"MD5",db_index=True,max_length=32)
     created=models.DateTimeField(verbose_name=u"获取时间",blank=True,null=True,auto_now=True)
-    owner=models.ManyToManyField("auth.User",verbose_name=u'上传者')
+    owner=models.ManyToManyField(UEDITOR_OWNER_MODEL,verbose_name=u'上传者')
 
     class Meta(object):
         abstract=True
@@ -102,8 +131,8 @@ class BaseFileStore(models.Model):
         return self.file.url
 
     @classmethod
-    def get_by_file(cls,user,file,file_name):
-        result,file_md5=get_content_file_by_file(file)
+    def get_by_file(cls,request,file,file_name):
+        result,file_md5,file_name=get_content_file_by_file(file,file_name,cls._is_image)
         if not result:
             return None
         try:
@@ -118,11 +147,11 @@ class BaseFileStore(models.Model):
                     result
                 )
                 # file.save()
-        file.owner.add(user)
+        file.owner.add(UEDITOR_GET_OWNER(request))
         return file
 
     @classmethod
-    def get_by_url(cls,user,url,path,referer="",force_refetch=False,checker=None):
+    def get_by_url(cls,request,url,path,referer="",force_refetch=False,checker=None):
         url=urlparse.urljoin(referer,url) if referer else url
 
         try:
@@ -154,7 +183,7 @@ class BaseFileStore(models.Model):
                     result
                 )
                 # file.save()
-        file.owner.add(user)
+        file.owner.add(UEDITOR_GET_OWNER(request))
         return file
 
     def delete(self,*args,**kwargs):

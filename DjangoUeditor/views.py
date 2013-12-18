@@ -1,12 +1,24 @@
 #coding:utf-8
-from django.http import HttpResponse
+from django.http import HttpResponse,HttpResponsePermanentRedirect,HttpResponseForbidden
 import settings as USettings
 import os
 import json
 from utils import GenerateRndFilename
 from django.views.decorators.csrf import csrf_exempt
-from .models import ImageStore,FileStore
-from common.utils import login_required
+from .models import ImageStore,FileStore,UEDITOR_OWNER_CHECK,UEDITOR_GET_OWNER
+# from common.utils import login_required
+from django.shortcuts import get_object_or_404
+
+
+def login_required(func):
+    """
+        会员登录判断,没有登陆就跳转到登陆页面
+    """
+    def _wrapper(request, *args, **kw):
+        if not UEDITOR_OWNER_CHECK(UEDITOR_GET_OWNER(request)):
+            return HttpResponseForbidden()
+        return func(request, *args, **kw)
+    return _wrapper
 
 
 #上传附件
@@ -45,18 +57,18 @@ def UploadFile(request,uploadtype,uploadpath):
     #返回数据
 
     if uploadtype=="image" or uploadtype=="scrawlbg":
-        store=ImageStore.get_by_file(request.user,file,os.path.join(uploadpath,file.name))
+        store=ImageStore.get_by_file(request,file,os.path.join(uploadpath,file.name))
         rInfo={
-            'url':store.url,    #保存后的文件名称
+            'url':str(store.id),    #保存后的文件名称
             'title':request.POST.get("pictitle",file.name),       #文件描述，对图片来说在前端会添加到title属性上
             'original':file.name,      #原始文件名
             'state':state           #上传状态，成功时返回SUCCESS,其他任何值将原样返回至图片上传框中
         }
         #保存到文件中
     else:
-        store=FileStore.get_by_file(request.user,file,os.path.join(uploadpath,file.name))
+        store=FileStore.get_by_file(request,file,os.path.join(uploadpath,file.name))
         rInfo={
-            'url':store.url,         #保存后的文件名称
+            'url':str(store.id),         #保存后的文件名称
             'original':file.name,         #原始文件名
             'filetype':original_ext,
             'state':state               #上传状态，成功时返回SUCCESS,其他任何值将原样返回至图片上传框中
@@ -85,7 +97,7 @@ def ReadDirImageFiles(path,user):
         owner=user,
         file__startswith=path
     )
-    return "ue_separate_ue".join([img.url for img in imgs])
+    return "ue_separate_ue".join([str(img.id) for img in imgs])
 
 #遍历所有文件清单
 # def ReadDirImageFiles(path):
@@ -110,7 +122,7 @@ def RemoteCatchImage(request,imagepath):
         return HttpResponse(json.dumps("{'state:'ERROR'}"),content_type="application/javascript")
 
     img=ImageStore.get_by_url(
-        user=request.user,
+        request=request,
         url=upfile_url,
         path=imagepath,
         checker=lambda url,filename,result:filename.split(".")[-1].lower() in USettings.UEditorSettings['images_upload']['allow_type']
@@ -120,7 +132,7 @@ def RemoteCatchImage(request,imagepath):
 
     #将抓取到的文件写入文件
     rInfo={
-        'url': img.url,                      # 新地址一ue_separate_ue新地址二ue_separate_ue新地址三',
+        'url': str(img.id),                      # 新地址一ue_separate_ue新地址二ue_separate_ue新地址三',
         'srcUrl':upfile_url,                    #原始地址一ue_separate_ue原始地址二ue_separate_ue原始地址三',
         'tip':u'远程图片抓取成功！'           #'状态提示'
     }
@@ -163,12 +175,19 @@ def scrawlUp(request,uploadpath):
         ##适配原始FileStorage
 
         image=ImageStore.get_by_file(
-            user=request.user,
+            request=request,
             file=base64.decodestring(content),
             file_name=os.path.join(uploadpath,OutputFile)
         )
         rInfo={
-            "url":image.url,
+            # "url":image.url,
+            "url":str(image.id),
             "state":"SUCCESS"
         }
         return HttpResponse(json.dumps(rInfo),content_type="application/javascript")
+
+
+@login_required
+def getFile(request,is_image,file_id):
+    filestore=get_object_or_404(ImageStore if is_image else FileStore,pk=file_id,owner=UEDITOR_GET_OWNER(request))
+    return HttpResponsePermanentRedirect(filestore.url)

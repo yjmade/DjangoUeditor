@@ -1,5 +1,6 @@
 #coding: utf-8
 
+
 #修正输入的文件路径,输入路径的标准格式：abc,不需要前后置的路径符号
 def FixFilePath(OutputPath,instance=None):
     if callable(OutputPath):
@@ -18,6 +19,7 @@ def FixFilePath(OutputPath,instance=None):
 
     return OutputPath
 
+
 #在上传的文件名后面追加一个日期时间+随机,如abc.jpg--> abc_20120801202409.jpg
 def GenerateRndFilename(filename):
     import datetime
@@ -26,9 +28,11 @@ def GenerateRndFilename(filename):
     f_name,f_ext=splitext(filename)
     return "%s_%s%s%s" % (f_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S_"),random.randrange(10,99),f_ext)
 
+
 #文件大小类
 class FileSize():
     SIZE_UNIT={"Byte":1,"KB":1024,"MB":1048576,"GB":1073741824,"TB":1099511627776L}
+
     def __init__(self,size):
         self.size=long(FileSize.Format(size))
 
@@ -61,6 +65,7 @@ class FileSize():
     @property
     def size(self):
         return self.size
+
     @size.setter
     def size(self,newsize):
         try:
@@ -85,7 +90,7 @@ class FileSize():
         if (self.size % FileSize.SIZE_UNIT[unit])==0:
             return "%s%s" % ((self.size / FileSize.SIZE_UNIT[unit]),unit)
         else:
-            return "%0.2f%s" % (round(float(self.size) /float(FileSize.SIZE_UNIT[unit]) ,2),unit)
+            return "%0.2f%s" % (round(float(self.size) /float(FileSize.SIZE_UNIT[unit]),2),unit)
 
     def __str__(self):
         return self.FriendValue
@@ -96,11 +101,13 @@ class FileSize():
             return FileSize(other.size+self.size)
         else:
             return FileSize(FileSize(other).size+self.size)
+
     def __sub__(self, other):
         if isinstance(other,FileSize):
             return FileSize(self.size-other.size)
         else:
             return FileSize(self.size-FileSize(other).size)
+
     def __gt__(self, other):
         if isinstance(other,FileSize):
             if self.size>other.size:
@@ -112,6 +119,7 @@ class FileSize():
                 return True
             else:
                 return False
+
     def __lt__(self, other):
         if isinstance(other,FileSize):
             if other.size>self.size:
@@ -123,6 +131,7 @@ class FileSize():
                 return True
             else:
                 return False
+
     def __ge__(self, other):
         if isinstance(other,FileSize):
             if self.size>=other.size:
@@ -134,6 +143,7 @@ class FileSize():
                 return True
             else:
                 return False
+
     def __le__(self, other):
         if isinstance(other,FileSize):
             if other.size>=self.size:
@@ -146,14 +156,19 @@ class FileSize():
             else:
                 return False
 
+
 def MadeUeditorOptions(width=600,height=300,plugins=(),toolbars="normal",filePath="",imagePath="",scrawlPath="",imageManagerPath="",css="",options={}):
     import settings as USettings
     uOptions={}
     uOptions['css']=css
-    if imagePath=="":imagePath=USettings.UEditorSettings["images_upload"].get("path","")
-    if filePath=="":filePath=USettings.UEditorSettings["files_upload"].get("path","")
-    if imageManagerPath=="":imageManagerPath=USettings.UEditorSettings["image_manager"].get("path","")
-    if scrawlPath=="":scrawlPath=USettings.UEditorSettings["scrawl_upload"].get("path","")
+    if imagePath=="":
+        imagePath=USettings.UEditorSettings["images_upload"].get("path","")
+    if filePath=="":
+        filePath=USettings.UEditorSettings["files_upload"].get("path","")
+    if imageManagerPath=="":
+        imageManagerPath=USettings.UEditorSettings["image_manager"].get("path","")
+    if scrawlPath=="":
+        scrawlPath=USettings.UEditorSettings["scrawl_upload"].get("path","")
 
     uOptions['imagePath']=FixFilePath(imagePath)
     uOptions['filePath']=FixFilePath(filePath)
@@ -176,4 +191,24 @@ def MadeUeditorOptions(width=600,height=300,plugins=(),toolbars="normal",filePat
     uOptions['options']=options
     uOptions['width']=width
     uOptions['height']=height
+
     return uOptions
+
+
+def MakeReverseUrl(uOptions):
+    from django.core.urlresolvers import reverse
+    uOptions["fileUrl"]=reverse("DjangoUeditor.views.getFile",kwargs={
+        "is_image":False,
+        "file_id":0
+    }).strip("0")
+    uOptions["imageUrl"]=reverse("DjangoUeditor.views.getFile",kwargs={
+        "is_image":True,
+        "file_id":0
+    }).strip("0")
+    uOptions["SearchMovieUrl"]=reverse("DjangoUeditor.views.SearchMovie")
+    uOptions["UploadImageUrl"]=reverse("DjangoUeditor.views.UploadFile",kwargs={'uploadtype':'image',"uploadpath":uOptions['imagePath']})
+    uOptions["UploadFileUrl"]=reverse("DjangoUeditor.views.UploadFile",kwargs={'uploadtype':'file',"uploadpath":uOptions['filePath']})
+    uOptions["UploadScrawlUrl"]=reverse("DjangoUeditor.views.scrawlUp",kwargs={"uploadpath":uOptions['scrawlPath']})
+    uOptions["ImageManagerUrl"]=reverse("DjangoUeditor.views.ImageManager",kwargs={"imagepath":uOptions['imageManagerPath']})
+    uOptions["RemoteCatchImageUrl"]=reverse("DjangoUeditor.views.ImageManager",kwargs={"imagepath":uOptions['imagePath']})
+    uOptions["urled"]=True
