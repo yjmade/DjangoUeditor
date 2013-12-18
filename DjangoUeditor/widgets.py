@@ -58,11 +58,11 @@ class UEditorWidget(forms.Textarea):
 
     class Media:
         css={"all": (
-            "ueditor/themes/default/css/ueditor.css",
-            "ueditor/themes/iframe.css",
+            "django_ueditor/themes/default/css/ueditor.css",
+            "django_ueditor/themes/iframe.css",
         )}
-        js=("ueditor/editor_config.js",
-            "ueditor/editor_all_min.js")
+        js=("django_ueditor/editor_config.js",
+            "django_ueditor/editor_all_min.js")
 
 
 class AdminUEditorWidget(AdminTextareaWidget, UEditorWidget):
