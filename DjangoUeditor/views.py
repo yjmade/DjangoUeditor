@@ -187,7 +187,11 @@ def scrawlUp(request,uploadpath):
         return HttpResponse(json.dumps(rInfo),content_type="application/javascript")
 
 
-@login_required
+# @login_required
 def getFile(request,is_image,file_id):
-    filestore=get_object_or_404(ImageStore if is_image else FileStore,pk=file_id,owner=UEDITOR_GET_OWNER(request))
+    filestore=get_object_or_404(
+        ImageStore if is_image else FileStore,
+        pk=file_id,
+        # owner=UEDITOR_GET_OWNER(request)
+    )
     return HttpResponsePermanentRedirect(filestore.url)

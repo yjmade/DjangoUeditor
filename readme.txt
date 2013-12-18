@@ -1,10 +1,16 @@
-﻿
+
 
 本fork在原始版本的基础上,
 --更改了view中所有文件存取的逻辑,增加了两个model:FileStore,ImageStore,使用标准FileField和ImageField存储文件,并存储文件地址,md5,上传用户等信息,同md5文件不会再次保存
 --限定登录才能上传文件.
 --图片库中只可以看到自己上传的图片.
 --修正attachment.html中fileScan.png误写filescan.png问题
+—-在settings中设置UEDITOR_OWNER_MODEL来自定义上传者的关联模型,默认是auth.User
+—-设置UEDITOR_GET_OWNER来从request中获取上传者对象,默认是lambda request:request.user
+—-设置UEDITOR_OWNER_CHECK来判断上传者是否登录,默认是lambda user:user.is_authencatied()
+—-在urls.py中增加include('DjangoUeditor.urls' )url前缀可以随意,不局限于r'^ueditor/‘,软件自动判断上传地址
+—-文件上传后系统返回的不是原始地址,而是一个301转向地址,文件是 ueditor/file/file_id,图片是/ueditor/image/image_id
+ 
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 本模块帮助在Django应用中集成百度Ueditor HTML编辑器，Ueditor HTML编辑器是百度开源的HTML编辑器，
